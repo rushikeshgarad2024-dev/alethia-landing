@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>alethia — Where Ecosystem Science and Enterprise Strategy Meet</title>
+<style>
+/* ============================================================
+   FONTS  (local subsets — fully offline)
+   Inter        : display / body grotesque, opsz pinned to 32
+   AlethiaMono  : Roboto Mono 700 — nav, buttons, HUD labels
+   AlethiaMark  : Poppins SemiBold — wordmark only
+   ============================================================ */
+@font-face{font-family:'Inter';font-style:normal;font-weight:200 700;font-display:block;
+  src:url(assets/inter-variable.woff2) format('woff2');}
+@font-face{font-family:'AlethiaMono';font-style:normal;font-weight:300 700;font-display:block;
+  src:url(assets/alethia-mono.woff2) format('woff2');}
+/* Full Latin builds for the scroll sections. The three faces above are
+   subsets cut to the hero's own characters (no capital A/B/C/D/F/I/L/O in
+   Inter, no lowercase or punctuation in the mono), so new copy uses these. */
+@font-face{font-family:'InterText';font-style:normal;font-weight:200 700;font-display:swap;
+  src:url(assets/inter-full.woff2) format('woff2');}
+@font-face{font-family:'MonoText';font-style:normal;font-weight:300 700;font-display:swap;
+  src:url(assets/mono-full.woff2) format('woff2');}
+@font-face{font-family:'AlethiaMark';font-style:normal;font-weight:300 700;font-display:block;
+  src:url(assets/alethia-mark.woff2) format('woff2');}
+
+/* ============================================================
+   TOKENS — every value sampled from the reference
+   ============================================================ */
+:root{
+  /* ---- colour ---- */
+  --ink:#01030F;
+  --white:#ffffff;
+  --blue:#0071FF;
+  --hairline:rgba(255,255,255,.84);
+  --hud:rgba(255,255,255,.78);
+  --scroll:rgba(255,255,255,.88);
+
+  /* ---- typography: families ---- */
+  --font-display:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  --font-mono:'AlethiaMono',ui-monospace,'Roboto Mono',monospace;
+  --font-mark:'AlethiaMark','Inter',sans-serif;
+  --font-text:'InterText','Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  --font-mono-text:'MonoText',ui-monospace,'Roboto Mono',monospace;
+
+  /* ---- typography: weights ----
+     Plain numbers on purpose. These were previously calc() expressions driven
+     by one variable, but calc() in font-weight is not reliably supported
+     (Safari drops the declaration, so the knob silently did nothing).
+     All three faces are variable across their stated ranges, so each value
+     below is a real axis position and nothing is browser-synthesised.
+     To adjust: edit the number. Lower = lighter. Useful range 300-700
+     for the mono and mark, 200-700 for Inter. */
+  --w-display:500;      /* hero headline            */
+  --w-body:300;         /* body copy                */
+  --w-body-strong:430;  /* body lead-in             */
+  --w-caption:300;      /* small UI caption         */
+  --w-mono:500;         /* hero button + HUD labels */
+  --w-nav:450;          /* navbar links + navbar CTA */
+  --w-mono-label:500;   /* HUD micro-labels         */
+  --w-mark:430;         /* wordmark                 */
+
+  /* ---- typography: sizes / rhythm ---- */
+  --t-display:70px;   --lh-display:68.5px;  --tr-display:-.029em;
+  --t-body:23.2px;    --lh-body:26px;       --tr-body:0em;
+  --tr-body-strong:-.021em;
+  --t-nav:15px;       --tr-nav:0em;
+  --t-caption:14.2px; --lh-caption:19px;    --tr-caption:0em;
+  --t-label:13px;     --lh-label:13px;      --tr-label:.008em;
+  --t-micro:11.8px;   --lh-micro:13px;      --tr-micro:0em;
+
+  --ref-w:1280;
+  --ref-h:720;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:var(--ink);}
+body{
+  background:var(--ink);
+  color:var(--white);
+  font-family:var(--font-display);
+  font-weight:var(--w-body);
+  /* Grayscale AA is kept deliberately: the weights above were calibrated
+     against grayscale-antialiased rendering, so this keeps macOS, Windows
+     and Linux on the same footing instead of stem-darkening only on macOS. */
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-synthesis:none;
+  overflow-x:hidden;
+  text-rendering:geometricPrecision;
+}
+
+/* ============================================================
+   VIEWPORT SHELL
+   .frame  — always exactly the visible viewport, never blank
+   .plate  — full-bleed artwork, object-fit:cover  (no bars)
+   .stage  — the measured 1280x720 canvas, uniformly scaled
+   ============================================================ */
+.frame{
+  position:fixed;inset:0;
+  width:100%;height:100dvh;
+  overflow:hidden;
+  background:var(--ink);
+  isolation:isolate;
+}
+.plate{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:50% 50%;
+  z-index:0;
+  pointer-events:none;
+  user-select:none;
+}
+.stage{
+  position:absolute;
+  left:0;top:0;
+  width:var(--sw,1280px);height:var(--sh,720px);
+  transform-origin:0 0;
+  transform:scale(var(--s,1));
+  z-index:1;
+}
+/* The stage is scaled so that ONE axis lands exactly on the viewport and the
+   other grows past 1280x720 — never smaller. Chrome is anchored to the real
+   viewport edges, the hero block to the top, the caption block to the bottom,
+   and the HUD to the artwork's centre. Result: identical proportions on every
+   aspect ratio, and no empty band on any edge. */
+
+/* ============================================================
+   HEADER   logo mark L35 T20 32x37 · nav origin 443 · row centre y38
+   ============================================================ */
+.mark{position:absolute;left:35px;top:19.5px;width:32px;height:38px;overflow:visible;}
+.mark path,.mark circle,.mark ellipse,.mark line{
+  fill:none;stroke:rgba(255,255,255,.88);stroke-width:1.15;stroke-linejoin:round;vector-effect:non-scaling-stroke;
+}
+.wordmark{
+  position:absolute;left:75.5px;top:20px;
+  font-family:var(--font-mark);font-weight:var(--w-mark);
+  font-size:32px;line-height:37px;letter-spacing:-.016em;
+  color:#fff;
+}
+.nav{
+  position:absolute;left:50%;margin-left:-197px;top:26px;height:24px;
+  display:flex;align-items:center;gap:21.7px;
+}
+.nav a{
+  display:flex;align-items:center;gap:9px;
+  font-family:var(--font-mono);font-weight:var(--w-nav);
+  font-size:var(--t-nav);line-height:1;letter-spacing:var(--tr-nav);
+  color:#fff;text-decoration:none;white-space:nowrap;
+  transition:color .25s ease;
+}
+.nav a:hover,.nav a:focus-visible{color:#8FC2FF;}
+.nav .chev{width:10px;height:6px;flex:none;}
+.nav .chev path{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:square;}
+
+.navcta{
+  position:absolute;right:38px;top:26px;height:24px;
+  display:flex;align-items:center;gap:15px;
+  text-decoration:none;
+}
+.navcta .lbl{
+  font-family:var(--font-mono);font-weight:var(--w-nav);
+  font-size:var(--t-nav);line-height:1;color:#fff;white-space:nowrap;
+  word-spacing:-5px;
+}
+.sq{
+  width:24px;height:24px;border-radius:5.5px;background:var(--blue);
+  display:grid;place-items:center;flex:none;
+  box-shadow:0 0 9px rgba(0,113,255,.28);
+  transition:transform .25s ease,box-shadow .25s ease;
+}
+.navcta:hover .sq,.cta:hover .sq{transform:translate(1px,-1px);box-shadow:0 0 20px rgba(0,113,255,.7);}
+.sq svg{width:13px;height:13px;display:block;}
+.sq path{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ============================================================
+   HEADLINE   Inter 700 / 70px / lh 69px / ls -2.5px
+   cap-top line1 = 148 · line tops 146 / 215 / 284 · left origin 40
+   ============================================================ */
+.headline{
+  position:absolute;left:40px;top:calc(140px + (100% - 720px) * .22);
+  font-family:var(--font-display);font-weight:var(--w-display);
+  font-size:var(--t-display);line-height:var(--lh-display);
+  letter-spacing:var(--tr-display);
+  color:#fff;white-space:nowrap;
+}
+.headline i{font-style:normal;display:block;
+}
+
+/* ============================================================
+   HERO CTA   box 40.5,379.5  157x56  1px hairline  r8
+   text origin 57  ·  blue square 157,396  24x24
+   ============================================================ */
+.cta{
+  position:absolute;left:40.5px;top:calc(379.5px + (100% - 720px) * .22);
+  width:157px;height:56px;
+  border:1px solid var(--hairline);border-radius:8px;
+  background:rgba(255,255,255,.02);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  text-decoration:none;display:block;
+  transition:background .3s ease,border-color .3s ease;
+}
+.cta:hover{background:rgba(255,255,255,.07);border-color:#fff;}
+.cta .lbl{
+  position:absolute;left:16.5px;top:50%;transform:translateY(calc(-50% + 1.5px));
+  font-family:var(--font-mono);font-weight:var(--w-mono);
+  font-size:var(--t-nav);line-height:1;color:#fff;white-space:nowrap;
+  word-spacing:-2px;
+}
+.cta .sq{position:absolute;left:116.5px;top:16.5px;}
+
+/* ============================================================
+   SUB-COPY   Inter 22px · lh 25.7px · left origin 40 · cap-top 577
+   ============================================================ */
+.sub{
+  position:absolute;left:42px;top:auto;bottom:44px;
+  font-family:var(--font-display);font-weight:var(--w-body);
+  font-size:var(--t-body);line-height:var(--lh-body);letter-spacing:var(--tr-body);
+  color:#fff;
+}
+.sub b{font-weight:var(--w-body-strong);letter-spacing:var(--tr-body-strong);display:block;}
+
+/* ============================================================
+   HUD OVERLAY  (drawn in stage pixels)
+   ============================================================ */
+/* Groups the HUD so tablet can scale/anchor it as one unit.
+   On desktop it is a box exactly the size of .stage, so its children resolve
+   to the same coordinates as before, and the scroll fade can act on it. */
+.hudgroup{position:absolute;inset:0;pointer-events:none;}
+.hud{position:absolute;left:50%;top:50%;margin:-360px 0 0 -640px;width:1280px;height:720px;pointer-events:none;overflow:visible;}
+.hud .dash{fill:none;stroke:var(--hud);stroke-width:1;stroke-dasharray:1.6 2.8;}
+.hud .solid{fill:none;stroke:var(--hud);stroke-width:1;}
+.hud .ring{fill:none;stroke:var(--hud);stroke-width:1.4;}
+.hud .dot{fill:var(--hud);}
+.hud .plus{fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:butt;}
+.hud .arrow{fill:none;stroke:var(--hud);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+
+.pill{
+  position:absolute;left:50%;margin-left:90px;top:50%;margin-top:-10px;width:71px;height:23px;
+  border-radius:5px;background:var(--blue);
+  box-shadow:0 0 12px rgba(0,113,255,.30);
+  display:grid;place-items:center;
+}
+.pill span{
+  font-family:var(--font-mono);font-weight:var(--w-mono-label);
+  font-size:var(--t-label);line-height:1;letter-spacing:var(--tr-label);color:#fff;
+  transform:translateX(.3px);
+}
+.annot{
+  position:absolute;left:50%;margin-left:255px;top:50%;margin-top:24px;
+  font-family:var(--font-mono);font-weight:var(--w-mono-label);
+  font-size:var(--t-micro);line-height:var(--lh-micro);letter-spacing:var(--tr-micro);
+  color:rgba(255,255,255,.95);white-space:pre;
+}
+.annot .l1{display:block;padding-left:3px;}
+.ghost{
+  position:absolute;left:50%;margin-left:228px;top:50%;margin-top:24px;
+  font-family:var(--font-mono);font-weight:var(--w-mono-label);
+  font-size:var(--t-micro);line-height:var(--lh-micro);letter-spacing:var(--tr-micro);
+  color:rgba(255,255,255,.5);white-space:pre;opacity:0;
+}
+
+/* ============================================================
+   SCROLL CUE   mark 1105,664 16x19 · text ink 1129 · cap-top 669
+   ============================================================ */
+.scroll{
+  position:absolute;left:auto;right:49px;top:auto;bottom:36px;
+  display:flex;align-items:center;gap:7px;
+}
+.scroll .m{width:16px;height:19px;flex:none;}
+.scroll .m path,.scroll .m ellipse,.scroll .m circle{fill:none;stroke:rgba(255,255,255,.8);stroke-width:2;stroke-linejoin:round;}
+.scroll span{
+  font-family:var(--font-display);font-weight:var(--w-caption);
+  font-size:var(--t-caption);line-height:var(--lh-caption);letter-spacing:var(--tr-caption);
+  color:var(--scroll);white-space:nowrap;
+}
+
+/* ============================================================
+   SCROLL FILM
+   One fixed video behind everything, scrubbed by scroll position.
+   Frame 0 is the hero artwork; the last frame is the ground scene.
+   Hero, vision and ecosystem copy are fixed overlays driven by the
+   same smoothed progress value, so text and film never drift apart.
+   ============================================================ */
+.film{opacity:0;transition:opacity .9s ease;background:var(--ink);}
+.film.on{opacity:1;}
+.veil{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;}
+.veil-v{background:radial-gradient(ellipse 36% 34% at 50% 52%,rgba(1,3,15,.58) 0%,rgba(1,3,15,.22) 55%,rgba(1,3,15,0) 78%);}
+.veil-e{background:
+  linear-gradient(180deg,rgba(1,3,15,.82) 0%,rgba(1,3,15,.42) 24%,rgba(1,3,15,0) 44%),
+  linear-gradient(0deg,rgba(1,3,15,.5) 0%,rgba(1,3,15,0) 26%);}
+.track{height:700vh;}
+
+/* hero hands off to the film */
+.body,.foot,.hudgroup{opacity:var(--ho,1);}
+.headline,.cta,.sub,.scroll,.hudgroup{translate:0 var(--hy,0px);}
+.bar{opacity:var(--bo,1);}
+.frame[data-hero="off"] .body,.frame[data-hero="off"] .foot,.frame[data-hero="off"] .hudgroup{visibility:hidden;}
+.frame[data-bar="off"] .bar{visibility:hidden;}
+
+.scenes{position:absolute;inset:0;z-index:1;pointer-events:none;}
+.scene{position:absolute;inset:0;opacity:0;visibility:hidden;}
+.scene.live{visibility:visible;}
+
+/* ── 02 · OUR VISION ─────────────────────────────────────── */
+.vision{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:0 24px;will-change:opacity,transform;
+}
+.tag{
+  display:inline-block;
+  font-family:var(--font-mono-text);font-weight:500;
+  font-size:max(10px,calc(9px * var(--k,1)));line-height:1;letter-spacing:.02em;
+  padding:.46em .56em .4em;border-radius:3px;
+  background:var(--blue);color:#fff;
+  box-shadow:0 0 12px rgba(0,113,255,.38);
+  will-change:opacity,transform;
+}
+.vision h2{
+  margin-top:max(16px,calc(20px * var(--k,1)));
+  font-family:var(--font-text);font-weight:var(--w-display);
+  font-size:max(30px,calc(40px * var(--k,1)));line-height:.95;letter-spacing:-.034em;
+  color:#fff;
+}
+.vision h2 i{display:block;font-style:normal;overflow:hidden;padding:.08em 0 .12em;margin:-.08em 0 -.12em;}
+.vision h2 i span{display:block;transform:translate3d(0,110%,0);will-change:transform;}
+.vision p{
+  margin-top:max(16px,calc(22px * var(--k,1)));
+  font-family:var(--font-text);font-weight:400;
+  font-size:max(14px,calc(14.5px * var(--k,1)));line-height:1.16;letter-spacing:-.012em;
+  color:rgba(255,255,255,.94);will-change:opacity,transform;
+}
+
+/* ── 03 · ECOSYSTEM ──────────────────────────────────────── */
+.eco-top{position:absolute;left:0;right:0;top:calc(104px * var(--k,1));will-change:opacity,transform;}
+.eco-label{
+  position:absolute;left:max(18px,calc(16px * var(--k,1)));top:calc(5px * var(--k,1));
+  font-family:var(--font-mono-text);font-weight:500;
+  font-size:max(9.5px,calc(7.8px * var(--k,1)));line-height:1.1;letter-spacing:.01em;
+  color:rgba(255,255,255,.6);
+}
+.eco h2{
+  margin:0 3% 0 34.75%;max-width:27.5em;
+  font-family:var(--font-text);font-weight:var(--w-display);
+  font-size:max(20px,calc(27px * var(--k,1)));line-height:.93;letter-spacing:-.03em;
+  color:rgba(255,255,255,.94);
+}
+/* the hotspot layer is sized like the film's object-fit:cover box (set in JS),
+   so each pin stays glued to the same spot in the artwork at any aspect */
+.spots{position:absolute;left:0;top:0;width:100%;height:100%;}
+.spot{
+  --d:max(20px,calc(23px * var(--k,1)));
+  position:absolute;left:var(--x);top:var(--y);
+  display:flex;align-items:center;gap:max(8px,calc(9px * var(--k,1)));
+  translate:calc(var(--d) / -2) -50%;
+  opacity:0;will-change:opacity,transform;
+}
+.pin{
+  position:relative;width:var(--d);height:var(--d);flex:none;border-radius:50%;
+  background:var(--blue);display:grid;place-items:center;
+  box-shadow:0 0 14px rgba(0,113,255,.55);
+}
+.pin::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(77,163,255,.9);
+  animation:pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite paused;
+}
+.eco.live .pin::before{animation-play-state:running;}
+.spot:nth-child(2) .pin::before{animation-delay:-.6s;}
+.spot:nth-child(3) .pin::before{animation-delay:-1.2s;}
+.spot:nth-child(4) .pin::before{animation-delay:-1.8s;}
+@keyframes pulse{from{transform:scale(1);opacity:.85}to{transform:scale(2.1);opacity:0}}
+.pin svg{width:62%;height:62%;display:block;}
+.pin circle{fill:#fff;}
+.cap{
+  font-family:var(--font-mono-text);font-weight:600;
+  font-size:max(8.5px,calc(7.4px * var(--k,1)));line-height:1.12;letter-spacing:.01em;
+  color:#fff;white-space:nowrap;text-shadow:0 0 10px rgba(1,3,15,.6);
+}
+.cap sub{font-size:.72em;vertical-align:-.12em;line-height:0;}
+
+/* mobile-only chrome, hidden on the measured stage */
+.burger{display:none;}
+.mnav{display:none;}
+/* the mobile menu is display:none until the breakpoint, but its typography
+   lives here so it comes from the same tokens as the desktop nav */
+.mnav a{
+  font-family:var(--font-mono);font-weight:var(--w-nav);
+  font-size:14px;line-height:1;letter-spacing:var(--tr-nav);
+  color:#fff;text-decoration:none;
+}
+
+/* ============================================================
+   FLOW MODE — tablet + phone.
+   Breakpoint derived from the design, not from a device width:
+   the scaled-stage architecture stays legible down to 1000px
+   (nav 11.7px, body 18.1px, HUD labels 9.2px) and first breaks
+   at ~960px, so 1000px is where the architecture changes.
+   The aspect clause is bounded to 1200px so a tall-but-wide
+   desktop window keeps the desktop architecture.
+   ============================================================ */
+@media (max-width:1000px),(max-aspect-ratio:12/10) and (max-width:1200px){
+  .stage{
+    position:absolute;left:0;top:0;transform:none;
+    width:100%;height:100%;
+    display:flex;flex-direction:column;
+    padding:max(18px,env(safe-area-inset-top)) 22px max(18px,env(safe-area-inset-bottom));
+    --fs:clamp(26px,min(9.6vw,7.6vh),64px);
+    --hud-s:.62;
+  }
+  .frame::after{
+    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:
+      linear-gradient(180deg,rgba(1,3,15,.86) 0%,rgba(1,3,15,.30) 26%,rgba(1,3,15,0) 44%),
+      linear-gradient(0deg,rgba(1,3,15,.92) 0%,rgba(1,3,15,.55) 26%,rgba(1,3,15,0) 52%);
+  }
+  .plate{object-position:58% 46%;}
+
+  .mark,.wordmark,.nav,.navcta,.headline,.cta,.sub,.scroll{
+    position:static;left:auto;top:auto;right:auto;bottom:auto;margin:0;transform:none;
+  }
+  /* nav links AND the nav CTA move into the menu; the logo stays put */
+  .nav,.navcta{display:none;}
+
+  /* HUD travels as one unit, anchored over the artwork */
+  .hudgroup{
+    display:block;position:absolute;z-index:2;pointer-events:none;
+    left:50%;top:62%;width:1280px;height:720px;margin:-360px 0 0 -640px;
+    transform:scale(var(--hud-s));transform-origin:50% 50%;
+  }
+
+  .bar{display:flex;align-items:center;justify-content:space-between;flex:none;position:relative;z-index:6;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .mark{width:28px;height:33px;}
+  .wordmark{font-size:27px;line-height:1;}
+  .sq{width:21px;height:21px;border-radius:5px;}
+  .sq svg{width:11px;height:11px;}
+
+  .body{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,3.4vh,30px);min-height:0;}
+  .headline{font-size:var(--fs);line-height:.985;white-space:normal;max-width:15ch;}
+  .headline i{display:inline;}
+  .headline i+i::before{content:' ';}
+  .sub br{display:none;}
+  .sub b{margin-bottom:.18em;}
+  .cta{width:clamp(146px,42vw,170px);height:clamp(46px,6.4vh,54px);position:relative;flex:none;}
+  .cta .lbl{left:clamp(13px,3.6vw,17px);font-size:clamp(12px,3.3vw,15px);}
+  .cta .sq{position:absolute;left:auto;right:clamp(12px,3.4vw,16px);top:50%;transform:translateY(-50%);}
+
+  .foot{flex:none;display:flex;flex-direction:column;gap:clamp(12px,2.4vh,20px);}
+  .sub{font-size:clamp(14px,3.9vw,18px);line-height:1.34;max-width:34ch;}
+  .scroll{align-self:flex-end;}
+  .scroll .m{width:14px;height:17px;}
+  .scroll span{font-size:12px;}
+
+  /* Same treatment as the hero CTA: 1px hairline, 8px radius, glass fill.
+     Sized so the three bars read as one mark rather than separate dashes. */
+  .burger{
+    --bar-w:16px; --bar-h:1.5px; --bar-gap:4px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:var(--bar-gap);width:36px;height:36px;flex:none;padding:0;
+    background:rgba(255,255,255,.02);
+    border:1px solid var(--hairline);border-radius:8px;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    cursor:pointer;
+    transition:background .3s ease,border-color .3s ease;
+  }
+  .burger:hover{background:rgba(255,255,255,.07);border-color:#fff;}
+  .burger i{
+    display:block;width:var(--bar-w);height:var(--bar-h);background:#fff;
+    transition:transform .38s cubic-bezier(.22,.8,.2,1),opacity .2s ease;
+  }
+  /* bars fold into a close mark while the panel is open */
+  .burger[aria-expanded="true"] i:nth-child(1){transform:translateY(calc(var(--bar-gap) + var(--bar-h))) rotate(45deg);}
+  .burger[aria-expanded="true"] i:nth-child(2){opacity:0;transform:scaleX(.3);}
+  .burger[aria-expanded="true"] i:nth-child(3){transform:translateY(calc(-1 * (var(--bar-gap) + var(--bar-h)))) rotate(-45deg);}
+  .mnav{
+    display:flex;flex-direction:column;gap:2px;
+    position:absolute;left:0;right:0;top:0;z-index:5;
+    padding:76px 22px 26px;
+    background:rgba(2,5,20,.92);
+    -webkit-backdrop-filter:blur(26px) saturate(140%);backdrop-filter:blur(26px) saturate(140%);
+    border-bottom:1px solid rgba(255,255,255,.12);
+    transform:translateY(-102%);transition:transform .42s cubic-bezier(.22,.8,.2,1);
+  }
+  .mnav.open{transform:translateY(0);box-shadow:0 0 0 100vmax rgba(1,3,15,.82);}
+  .mnav:not(.open){pointer-events:none;}
+  .mnav a:not(.mnav-cta){padding:13px 0;border-bottom:1px solid rgba(255,255,255,.08);}
+  .mnav a:not(.mnav-cta):last-of-type{border-bottom:0;}
+  /* menu CTA reuses the navbar CTA's own parts, same treatment */
+  .mnav-cta{
+    display:inline-flex;align-items:center;justify-content:space-between;gap:20px;
+    width:max-content;min-width:200px;height:52px;margin-top:20px;
+    padding:0 15px 0 17px;
+    border:1px solid var(--hairline);border-radius:8px;
+    background:rgba(255,255,255,.02);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    transition:background .3s ease,border-color .3s ease;
+  }
+  .mnav-cta:hover{background:rgba(255,255,255,.07);border-color:#fff;}
+  .mnav-cta .lbl{
+    font-family:var(--font-mono);font-weight:var(--w-nav);
+    font-size:var(--t-nav);line-height:1;color:#fff;word-spacing:-5px;
+  }
+  .mnav-cta .sq{width:24px;height:24px;border-radius:5.5px;}
+  .mnav-cta .sq svg{width:13px;height:13px;}
+}
+
+/* ============================================================
+   TABLET — 700px and up inside flow mode.
+   Keeps the desktop composition's DNA: headline block high-left,
+   artwork with its HUD in the middle band, caption and scroll cue
+   sharing the bottom band as a row (as they do on desktop).
+   ============================================================ */
+@media (min-width:520px) and (max-width:1000px),
+       (min-width:520px) and (max-aspect-ratio:12/10) and (max-width:1200px){
+  .stage{
+    padding:max(30px,env(safe-area-inset-top)) clamp(34px,4.6vw,60px) max(30px,env(safe-area-inset-bottom));
+    --hud-s:.72;
+  }
+  .plate{object-position:56% 48%;}
+  /* softer scrim: a tablet has room, so the artwork stays more visible */
+  .frame::after{
+    background:
+      linear-gradient(180deg,rgba(1,3,15,.72) 0%,rgba(1,3,15,.20) 24%,rgba(1,3,15,0) 42%),
+      linear-gradient(0deg,rgba(1,3,15,.88) 0%,rgba(1,3,15,.42) 24%,rgba(1,3,15,0) 48%);
+  }
+
+  .mark{width:34px;height:40px;}
+  .wordmark{font-size:33px;}
+  .burger{--bar-w:19px; --bar-gap:4.5px; width:44px;height:44px;}
+
+  /* headline keeps its designed three-line break instead of rewrapping */
+  .body{justify-content:flex-start;padding-top:clamp(24px,7vh,86px);gap:clamp(26px,4vh,40px);}
+  .headline{max-width:none;font-size:clamp(40px,8.4vw,74px);line-height:1;}
+  .headline i{display:block;}
+  .headline i+i::before{content:none;}
+
+  .cta{width:172px;height:56px;}
+  .cta .lbl{left:16.5px;font-size:var(--t-nav);}
+  .cta .sq{right:16px;width:24px;height:24px;border-radius:5.5px;}
+  .cta .sq svg{width:13px;height:13px;}
+
+  /* bottom band mirrors desktop: caption left, scroll cue right */
+  .foot{flex-direction:row;align-items:flex-end;justify-content:space-between;gap:clamp(24px,4vw,56px);}
+  .sub{font-size:clamp(17px,2.1vw,21px);line-height:1.28;max-width:31ch;}
+  .sub br{display:none;}
+  .scroll{align-self:flex-end;flex:none;}
+  .scroll .m{width:16px;height:19px;}
+  .scroll span{font-size:14px;}
+
+  .mnav{padding:104px clamp(34px,4.6vw,60px) 40px;}
+  .mnav a:not(.mnav-cta){padding:17px 0;font-size:16px;}
+  .mnav-cta{min-width:224px;height:56px;padding:0 16px 0 18px;margin-top:28px;}
+}
+
+/* ============================================================
+   MOBILE — below 520px.
+   Chosen from where the tablet architecture actually fails:
+   the HUD label starts clipping at ~510px, the caption drops to
+   five lines by 460px, and the headline loses its three-line
+   structure at 430px. Above 520px the tablet architecture holds.
+
+   The HUD is re-architected rather than deleted: the crosshair
+   stays as a scaled overlay on the artwork, and the IMPACT pill
+   keeps its EVIDENCE FOR DECISIONS partner as a caption eyebrow,
+   so no content is lost at any width.
+   ============================================================ */
+@media (max-width:519px){
+  .stage{padding:max(16px,env(safe-area-inset-top)) 22px max(16px,env(safe-area-inset-bottom));}
+
+  /* headline keeps its designed three lines: size is derived from the
+     longest line (9.59em) so "Science and Enterprise" never wraps */
+  .headline{
+    max-width:none;line-height:1.02;
+    font-size:clamp(25px,calc((100vw - 44px) / 9.78),44px);
+  }
+  .headline i{display:block;}
+  .headline i+i::before{content:none;}
+
+  /* HUD splits: graphic stays on the artwork, labels become an eyebrow */
+  .hudgroup{
+    display:flex;align-items:center;flex-wrap:wrap;gap:9px;
+    position:static;width:auto;height:auto;margin:0 0 clamp(10px,1.6vh,16px);
+    transform:none;pointer-events:auto;flex:none;
+  }
+  .hud{
+    --hs:.58;
+    display:block;position:absolute;left:50%;top:50%;
+    width:1280px;height:720px;margin:-360px 0 0 -640px;
+    /* shift so the crosshair, not the 1280px canvas, is what gets centred */
+    transform:translateX(calc(-122.5px * var(--hs))) scale(var(--hs));
+    transform-origin:50% 50%;pointer-events:none;
+  }
+  .ghost{display:none;}
+  .pill{
+    position:static;margin:0;transform:none;flex:none;
+    display:inline-grid;width:64px;height:21px;border-radius:5px;
+  }
+  .pill span{font-size:11.5px;}
+  .annot{
+    position:static;margin:0;transform:none;display:block;
+    font-size:10.5px;line-height:1.2;white-space:normal;
+    color:rgba(255,255,255,.62);
+  }
+  .annot .l1,.annot span{display:inline;padding-left:0;}
+  .annot .l1::after{content:' ';}
+}
+
+/* short landscape phones: drop the caption, tighten everything */
+@media (max-width:900px) and (max-height:560px){
+  .sub,.pill,.annot{display:none;}
+  .hudgroup,.hud{display:none;}
+  .body{gap:10px;justify-content:center;padding-top:0;}
+  .stage{padding:12px 18px;}
+  .cta{height:42px;}
+  .mark{width:24px;height:28px;}
+  .wordmark{font-size:23px;}
+  .foot{gap:8px;}
+}
+
+/* ============================================================
+   ENTRANCE — one timeline, ~1.8s, runs once, then fully static.
+
+   The artwork is the stage and never moves, so the entrance is
+   carried entirely by the foreground and led by the message:
+
+     0.08  headline lines uncover from their masks
+     0.30  the frame settles around it (brand, nav, nav CTA)
+     0.58  the action arrives (hero CTA)
+     0.70  the context follows (caption)
+     0.86  the instrument acquires: node, then axes, then marks,
+           then its IMPACT label, then the readout decodes
+
+   Lines are staggered 0.11s against a 0.72s reveal so only one
+   line is ever mid-uncover — a masked reveal reads as broken text
+   if every line is half-cut at the same time.
+
+   .motion-done then deletes every rule below, so nothing survives.
+   ============================================================ */
+@media (prefers-reduced-motion:no-preference){
+  /* A — masked line uncover (primary typography, leads the sequence) */
+  html:not(.motion-done) .headline{display:flex;flex-direction:column;}
+  html:not(.motion-done) .headline i{overflow:hidden;padding:.2em 0 .28em;margin:-.2em 0 -.28em;}
+  html:not(.motion-done) .headline i span{
+    display:block;transform:translateY(130%);
+    animation:e-line .66s cubic-bezier(.19,1,.22,1) forwards;
+  }
+  html:not(.motion-done) .headline i:nth-child(1) span{animation-delay:.18s;}
+  html:not(.motion-done) .headline i:nth-child(2) span{animation-delay:.34s;}
+  html:not(.motion-done) .headline i:nth-child(3) span{animation-delay:.50s;}
+
+  /* B — the frame settles in from the edge it is anchored to.
+         Three groups, not eight nodes: brand, nav, nav action. */
+  html:not(.motion-done) .brand,
+  html:not(.motion-done) .nav,
+  html:not(.motion-done) .navcta,
+  html:not(.motion-done) .burger{
+    opacity:0;animation:e-frame .5s cubic-bezier(.22,.8,.2,1) forwards;
+  }
+  html:not(.motion-done) .brand{animation-delay:.06s;}
+  html:not(.motion-done) .nav{animation-delay:.14s;}
+  html:not(.motion-done) .navcta,
+  html:not(.motion-done) .burger{animation-delay:.22s;}
+
+  /* C — action, then context: short rise, the CTA also settling in scale */
+  html:not(.motion-done) .cta{
+    opacity:0;animation:e-act .55s cubic-bezier(.22,.8,.2,1) .74s forwards;
+  }
+  html:not(.motion-done) .sub{
+    opacity:0;animation:e-lift .6s cubic-bezier(.22,.8,.2,1) .86s forwards;
+  }
+  html:not(.motion-done) .scroll{
+    opacity:0;animation:e-fade .45s ease-out 1.24s forwards;
+  }
+
+  /* D — the instrument acquires: lock, extend, populate, label, read */
+  html:not(.motion-done) .h-node{
+    opacity:0;transform-box:fill-box;transform-origin:center;
+    animation:e-lock .45s cubic-bezier(.19,1,.22,1) .98s forwards;
+  }
+  html:not(.motion-done) .h-axes{opacity:0;animation:e-fade .5s ease-out 1.08s forwards;}
+  html:not(.motion-done) .h-marks{opacity:0;animation:e-fade .5s ease-out 1.18s forwards;}
+  html:not(.motion-done) .pill{
+    opacity:0;animation:e-settle .45s cubic-bezier(.22,.8,.2,1) 1.20s forwards;
+  }
+  html:not(.motion-done) .annot{opacity:0;animation:e-fade .4s ease-out 1.32s forwards;}
+
+  @keyframes e-line  {to{transform:none}}
+  @keyframes e-frame {from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none}}
+  @keyframes e-lift  {from{opacity:0;transform:translateY(8px)}  to{opacity:1;transform:none}}
+  @keyframes e-act   {from{opacity:0;transform:translateY(8px) scale(.99)} to{opacity:1;transform:none}}
+  @keyframes e-fade  {to{opacity:1}}
+  @keyframes e-lock  {from{opacity:0;transform:scale(.35)} to{opacity:1;transform:none}}
+  @keyframes e-settle{from{opacity:0;transform:scale(.92)} to{opacity:1;transform:none}}
+}
+/* ============================================================
+   SCROLL SECTIONS — flow mode (tablet + phone)
+   ============================================================ */
+@media (max-width:1000px),(max-aspect-ratio:12/10) and (max-width:1200px){
+  .vision h2{font-size:clamp(30px,8.6vw,48px);}
+  .vision p{font-size:clamp(14px,3.8vw,17px);max-width:26ch;}
+  .vision p br{display:none;}
+  .eco-top{
+    top:max(104px,calc(env(safe-area-inset-top) + 88px));padding:0 22px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .eco-label{position:static;}
+  .eco h2{margin:0;max-width:22em;font-size:clamp(21px,5.6vw,32px);line-height:1.02;}
+  .spot{left:var(--mx);top:var(--my);}
+  .veil-e{background:
+    linear-gradient(180deg,rgba(1,3,15,.9) 0%,rgba(1,3,15,.6) 30%,rgba(1,3,15,0) 56%),
+    linear-gradient(0deg,rgba(1,3,15,.5) 0%,rgba(1,3,15,0) 26%);}
+}
+@media (min-width:520px) and (max-width:1000px),
+       (min-width:520px) and (max-aspect-ratio:12/10) and (max-width:1200px){
+  .eco-top{padding:0 clamp(34px,4.6vw,60px);top:max(136px,calc(env(safe-area-inset-top) + 122px));}
+}
+@media (max-width:519px){
+  /* the hud group is in normal flow on phones; translating it would make it
+     the containing block for the crosshair, so the crosshair moves instead */
+  .hudgroup{translate:none;}
+  .hud{translate:0 var(--hy,0px);}
+}
+
+:focus-visible{outline:2px solid #4DA3FF;outline-offset:3px;border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="frame">
+  <img class="plate" src="assets/hero-plate.webp" alt="">
+  <video class="plate film" id="film" muted playsinline preload="auto" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video>
+  <div class="veil veil-v" id="veilV"></div>
+  <div class="veil veil-e" id="veilE"></div>
+
+  <!-- ── scroll sections (fixed overlays, driven by scroll progress) ── -->
+  <div class="scenes">
+    <section class="scene vision" id="vision" aria-labelledby="vision-h">
+      <span class="tag">OUR VISION</span>
+      <h2 id="vision-h"><i><span>From Data Chaos to</span></i><i><span>Science-Backed,</span></i><i><span>Actionable Insights</span></i></h2>
+      <p>A Breakthrough In Environmental Measurement. <br>Built for Commercial Use.</p>
+    </section>
+
+    <section class="scene eco" id="eco" aria-labelledby="eco-h">
+      <div class="eco-top">
+        <p class="eco-label">REAL-TIME,<br>BLOCKCHAIN-BACKED<br>CARBON INTELLIGENCE</p>
+        <h2 id="eco-h">Our Ecosystem-Level Accounting Solutions translate complex scientific data into verifiable, compliance-ready metrics&mdash;so you can drive measurable results, not just reports.</h2>
+      </div>
+      <div class="spots" id="spots">
+        <div class="spot" style="--x:31.1%;--y:50.5%;--mx:8%;--my:57%"><span class="pin"><svg viewBox="0 0 16 16"><circle cx="8" cy="3.4" r="1.4"/><circle cx="3.4" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.6" cy="8" r="1.4"/><circle cx="8" cy="12.6" r="1.4"/></svg></span><span class="cap">CO<sub>2</sub> EMISSIONS<br>REACH RECORD HIGH<br>IN 2024</span></div>
+        <div class="spot" style="--x:76.45%;--y:50.5%;--mx:54%;--my:65%"><span class="pin"><svg viewBox="0 0 16 16"><circle cx="8" cy="3.4" r="1.4"/><circle cx="3.4" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.6" cy="8" r="1.4"/><circle cx="8" cy="12.6" r="1.4"/></svg></span><span class="cap">CO<sub>2</sub> EMISSIONS<br>REACH RECORD HIGH<br>IN 2024</span></div>
+        <div class="spot" style="--x:5.5%;--y:73.3%;--mx:10%;--my:76%"><span class="pin"><svg viewBox="0 0 16 16"><circle cx="8" cy="3.4" r="1.4"/><circle cx="3.4" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.6" cy="8" r="1.4"/><circle cx="8" cy="12.6" r="1.4"/></svg></span><span class="cap">CO<sub>2</sub> EMISSIONS<br>REACH RECORD HIGH<br>IN 2024</span></div>
+        <div class="spot" style="--x:61.65%;--y:80.1%;--mx:50%;--my:87%"><span class="pin"><svg viewBox="0 0 16 16"><circle cx="8" cy="3.4" r="1.4"/><circle cx="3.4" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.6" cy="8" r="1.4"/><circle cx="8" cy="12.6" r="1.4"/></svg></span><span class="cap">CO<sub>2</sub> EMISSIONS<br>REACH RECORD HIGH<br>IN 2024</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="stage" id="stage">
+
+    <!-- ── header ───────────────────────────────────────────── -->
+    <div class="bar">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 32 38" aria-hidden="true">
+          <path d="M15.6 .9 L30.1 10.6 V28.4 L15.6 37.1 L1.9 28.4 V10.6 Z"/>
+          <path d="M15.6 3.6 L27.2 10.4 L15.6 17.2 L4 10.4 Z"/>
+          <path d="M15.6 3.6 V17.2 M4 10.4 H27.2"/>
+          <path d="M4 10.4 V24.4 M27.2 10.4 V24.4 M4 24.4 L15.6 31.2 L27.2 24.4"/>
+          <path d="M15.6 .9 V3.6 M1.9 10.6 H4 M30.1 10.6 H27.2 M1.9 28.4 L4 24.4 M30.1 28.4 L27.2 24.4"/>
+          <path d="M15.6 17.2 V37.1"/>
+          <path d="M4 10.4 L26 27.4 M27.2 10.4 L5.2 27.4"/>
+          <ellipse cx="15.75" cy="22.8" rx="7.6" ry="3.9"/>
+          <ellipse cx="15.75" cy="23.8" rx="3.2" ry="4.6"/>
+          <circle cx="15.75" cy="22.8" r="1.5"/>
+        </svg>
+        <span class="wordmark">alethia</span>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <a href="#">SOLUTIONS<svg class="chev" viewBox="0 0 10 6"><path d="M1 1 L5 5 L9 1"/></svg></a>
+        <a href="#">OUR TECH<svg class="chev" viewBox="0 0 10 6"><path d="M1 1 L5 5 L9 1"/></svg></a>
+        <a href="#">COMPANY</a>
+        <a href="#">RESOURCES<svg class="chev" viewBox="0 0 10 6"><path d="M1 1 L5 5 L9 1"/></svg></a>
+      </nav>
+
+      <a class="navcta" href="#contact">
+        <span class="lbl">LET&rsquo;S TALK</span>
+        <span class="sq"><svg viewBox="0 0 13 13"><path d="M3.4 9.6 L9.6 3.4 M4.5 3.4 H9.6 V8.5"/></svg></span>
+      </a>
+
+      <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="mnav">
+        <i></i><i></i><i></i>
+      </button>
+    </div>
+
+    <!-- ── hero body ────────────────────────────────────────── -->
+    <div class="body">
+      <h1 class="headline"><i><span>Where Ecosystem</span></i><i><span>Science and Enterprise</span></i><i><span>Strategy Meet</span></i></h1>
+
+      <a class="cta" href="#contact">
+        <span class="lbl">LET&rsquo;S TALK</span>
+        <span class="sq"><svg viewBox="0 0 13 13"><path d="M3.4 9.6 L9.6 3.4 M4.5 3.4 H9.6 V8.5"/></svg></span>
+      </a>
+    </div>
+
+    <!-- ── HUD ──────────────────────────────────────────────── -->
+    <div class="hudgroup">
+    <div class="pill"><span>IMPACT</span></div>
+
+    <svg class="hud" viewBox="0 0 1280 720" aria-hidden="true">
+      <defs>
+        <filter id="glow" x="-120%" y="-120%" width="340%" height="340%">
+          <feGaussianBlur stdDeviation="2.2"/>
+        </filter>
+      </defs>
+      <!-- vertical + horizontal dashed axes -->
+      <g class="h-axes">
+        <path class="dash" d="M762.5 374 V452"/>
+        <path class="dash" d="M731 406.5 H857"/>
+        <!-- left tick cluster -->
+        <path class="dash" d="M731 391.5 H753"/>
+        <path class="dash" d="M731 396.5 H751"/>
+        <path class="solid" d="M731 388.5 V395 M736 390 V394 M741 390 V394 M746 390 V394"/>
+        <path class="solid" d="M731 402.5 H745"/>
+      </g>
+      <!-- node -->
+      <g class="h-node">
+        <circle cx="762.5" cy="406.5" r="7.6" fill="rgba(0,113,255,.5)" filter="url(#glow)"/>
+        <circle cx="762.5" cy="406.5" r="5.6" fill="#0071FF"/>
+        <circle cx="762.5" cy="406.5" r="2" fill="#EAF3FF"/>
+      </g>
+      <g class="h-marks">
+        <!-- inline marker icons -->
+        <circle class="ring" cx="800" cy="393.5" r="5.4"/><circle class="dot" cx="800" cy="394.6" r="1.9"/>
+        <ellipse class="ring" cx="814" cy="393.5" rx="7" ry="5.4"/><circle class="dot" cx="814" cy="393.5" r="2.2"/>
+        <path class="ring" d="M826.4 398.6 a5.4 5.4 0 1 1 9.2 0"/>
+        <circle class="ring" cx="831" cy="393.8" r="5.4"/><path class="dot" d="M831 390.6 l2.6 4.4 h-5.2 Z"/>
+        <!-- descender arrow -->
+        <path class="arrow" d="M757.5 452 L762.5 460.5 L767.5 452 M762.5 452 V461"/>
+        <!-- plus -->
+        <path class="plus" d="M750.5 456.5 V472.5 M742.5 464.5 H758.5"/>
+      </g>
+    </svg>
+
+    <div class="ghost" id="ghost">EO<span style="display:block">FOR</span></div>
+    <div class="annot" id="annot"><span class="l1">EVIDENCE</span><span>FOR DECISIONS</span></div>
+    </div>
+
+    <!-- ── footer ───────────────────────────────────────────── -->
+    <div class="foot">
+      <p class="sub"><b>Know your impact&mdash;precisely.</b>End-to-end environmental intelligence powered <br>by science, blockchain, and transparent data you <br>can trust.</p>
+      <p class="credit" style="margin-top:12px;font-size:12px;opacity:.6;">Built by Rushikesh Garad &middot; &copy; 2026</p>
+
+      <div class="scroll">
+        <svg class="m" viewBox="0 0 32 38" aria-hidden="true">
+          <path d="M15.6 .9 L30.1 10.6 V28.4 L15.6 37.1 L1.9 28.4 V10.6 Z"/>
+          <path d="M15.6 3.6 L27.2 10.4 L15.6 17.2 L4 10.4 Z"/>
+          <path d="M15.6 3.6 V17.2 M4 10.4 H27.2"/>
+          <path d="M4 10.4 V24.4 M27.2 10.4 V24.4 M4 24.4 L15.6 31.2 L27.2 24.4"/>
+          <path d="M15.6 .9 V3.6 M1.9 10.6 H4 M30.1 10.6 H27.2 M1.9 28.4 L4 24.4 M30.1 28.4 L27.2 24.4"/>
+          <path d="M15.6 17.2 V37.1"/>
+          <path d="M4 10.4 L26 27.4 M27.2 10.4 L5.2 27.4"/>
+          <ellipse cx="15.75" cy="22.8" rx="7.6" ry="3.9"/>
+          <ellipse cx="15.75" cy="23.8" rx="3.2" ry="4.6"/>
+          <circle cx="15.75" cy="22.8" r="1.5"/>
+        </svg>
+        <span>Scroll to discover</span>
+      </div>
+    </div>
+
+    <nav class="mnav" id="mnav" aria-label="Mobile">
+      <a href="#">SOLUTIONS</a><a href="#">OUR TECH</a><a href="#">COMPANY</a><a href="#">RESOURCES</a>
+      <a class="mnav-cta" href="#contact">
+        <span class="lbl">LET&rsquo;S TALK</span>
+        <span class="sq"><svg viewBox="0 0 13 13"><path d="M3.4 9.6 L9.6 3.4 M4.5 3.4 H9.6 V8.5"/></svg></span>
+      </a>
+    </nav>
+  </div>
+</div>
+<div class="track" aria-hidden="true"></div>
+
+<script>
+(function(){
+  var stage=document.getElementById('stage'), frame=stage.parentNode;
+  var film=document.getElementById('film'), spotsEl=document.getElementById('spots');
+  var rootStyle=document.documentElement.style, plateImg=frame.querySelector('img.plate');
+  /* flow-mode framing of the artwork (read from the plate, which never gets inline styles) */
+  var isFlow=false, baseX=50, baseY=50;
+  function flow(){
+    return window.matchMedia('(max-width:1000px),(max-aspect-ratio:12/10) and (max-width:1200px)').matches;
+  }
+  function fit(){
+    var st=stage.style;
+    var fw=frame.clientWidth,fh=frame.clientHeight;
+    isFlow=flow();
+    var pop=getComputedStyle(plateImg).objectPosition.split(' ');
+    baseX=parseFloat(pop[0])||50; baseY=parseFloat(pop[1])||50;
+    rootStyle.setProperty('--k',Math.min(fw/1280,fh/720));
+    /* hotspot layer = the film's object-fit:cover box */
+    if(flow()){spotsEl.style.cssText='';}
+    else{
+      var ar=(film.videoWidth&&film.videoHeight)?film.videoWidth/film.videoHeight:16/9,
+          cw=Math.max(fw,fh*ar),ch=cw/ar,px=baseX/100,py=baseY/100;
+      spotsEl.style.cssText='left:'+((fw-cw)*px)+'px;top:'+((fh-ch)*py)+'px;width:'+cw+'px;height:'+ch+'px';
+    }
+    if(flow()){st.setProperty('--s',1);st.setProperty('--sw','100%');st.setProperty('--sh','100%');return;}
+    var w=frame.clientWidth,h=frame.clientHeight,s=(w/h>=1280/720)?h/720:w/1280;
+    st.setProperty('--s',s);
+    st.setProperty('--sw',(w/s)+'px');
+    st.setProperty('--sh',(h/s)+'px');
+  }
+  fit();
+  addEventListener('resize',fit,{passive:true});
+  addEventListener('orientationchange',function(){setTimeout(fit,60);});
+  if(window.visualViewport)visualViewport.addEventListener('resize',fit,{passive:true});
+
+  var b=document.getElementById('burger'),m=document.getElementById('mnav');
+  function setMenu(open){
+    m.classList.toggle('open',open);
+    b.setAttribute('aria-expanded',open?'true':'false');
+  }
+  b.addEventListener('click',function(){setMenu(!m.classList.contains('open'));});
+  m.addEventListener('click',function(e){if(e.target.closest('a'))setMenu(false);});
+  addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&m.classList.contains('open')){setMenu(false);b.focus();}
+  });
+
+  /* HUD label decode — the reference frame is one moment of this reveal */
+  var annot=document.getElementById('annot'), ghost=document.getElementById('ghost');
+  if(!matchMedia('(prefers-reduced-motion:reduce)').matches){
+    var started=false;
+    var l1=annot.children[0],l2=annot.children[1],t1='EVIDENCE',t2='FOR DECISIONS',
+        pool='ABCDEFGHIJKLMNOPQRSTUVWXYZ#/\\<>_', i=0, id;
+    l1.textContent='';l2.textContent='';
+    /* the readout decodes as its label fades in, not on load */
+    setTimeout(startDecode,1340);
+    function startDecode(){
+    if(started)return; started=true;
+    ghost.style.opacity='1';
+    id=setInterval(function(){
+      i++;
+      l1.textContent=t1.slice(0,i)+scr(t1.length-i);
+      l2.textContent=t2.slice(0,i)+scr(t2.length-i);
+      if(i>=t2.length){clearInterval(id);id=null;l1.textContent=t1;l2.textContent=t2;ghost.style.opacity='0';}
+    },55);
+    }
+    function scr(n){var s='';for(var k=0;k<Math.min(n,2);k++)s+=pool[Math.random()*pool.length|0];return s;}
+    /* entrance over: drop every entrance rule so nothing stays animated */
+    setTimeout(function(){
+      document.documentElement.classList.add('motion-done');
+      /* release the compositing layers the entrance created, so the resting
+         page rasterises exactly as the un-animated design does */
+      [].forEach.call(document.querySelectorAll('.cta,.sub,.scroll,.bar,.headline,.pill,.annot'),function(e){
+        e.style.display='none'; void e.offsetHeight; e.style.display='';
+      });
+    },2300);
+  }else{
+    document.documentElement.classList.add('motion-done');
+  }
+
+  /* ==========================================================
+     SCROLL FILM ENGINE
+     Native scroll sets a target; a rAF loop eases a displayed
+     progress toward it (frame-rate independent), and that one
+     value drives both the film's currentTime and every overlay.
+     The film is fetched whole into a blob so seeks never wait on
+     the network, and a new seek is only issued once the previous
+     one has landed, so the decoder is never flooded.
+     ========================================================== */
+  /* Seedance 2.0 render, as returned by Higgsfield (1080p, 24fps, 3 keyframes) */
+  var FILM_ORIGINAL='https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260910_090837_cb58503a-4f5f-4e56-bc2f-6879b1f6ff9a.mp4';
+  /* same frames re-encoded for scrubbing: keyframe every 4 frames, no B-frames,
+     so any seek decodes at most 3 frames (the original needs up to 82) */
+  var FILM_SRC='https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/4f7f0dd1-e1eb-4b65-a4a4-0ed8c51f54d4.mp4';
+  /* scroll progress -> film progress (piecewise linear, both 0..1) */
+  /* hero drift 0-2.5s | vision: rock turns toward camera 2.5-5.2s |
+     dive through the foliage 5.2-7.8s | ground settles 7.8-10s */
+  var FILM_MAP=[[0,0],[.12,.25],[.47,.52],[.72,.78],[.92,1],[1,1]];
+
+  var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var fst=frame.style, vis=document.getElementById('vision'), eco=document.getElementById('eco'),
+      vTag=vis.querySelector('.tag'), vLines=[].slice.call(vis.querySelectorAll('h2 i span')),
+      vSub=vis.querySelector('p'), eTop=eco.querySelector('.eco-top'),
+      spots=[].slice.call(eco.querySelectorAll('.spot')),
+      veilV=document.getElementById('veilV'), veilE=document.getElementById('veilE');
+
+  function c01(x){return x<0?0:x>1?1:x;}
+  function ramp(p,a,b){return c01((p-a)/(b-a));}
+  function out3(t){return 1-(1-t)*(1-t)*(1-t);}
+  function inOut(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+  function map(m,p){
+    for(var i=1;i<m.length;i++){if(p<=m[i][0]){var a=m[i-1],b=m[i];return a[1]+(b[1]-a[1])*((p-a[0])/(b[0]-a[0]||1));}}
+    return m[m.length-1][1];
+  }
+  function live(el,on){if(el._on!==on){el._on=on;el.classList.toggle('live',on);}}
+
+  var last=-1;
+  function render(p){
+    if(p===last)return; last=p;
+
+    /* 01 hero: lifts away over the first stretch of scroll */
+    var h=out3(ramp(p,0,.11));
+    fst.setProperty('--ho',(1-h).toFixed(4));
+    fst.setProperty('--hy',(-56*h).toFixed(2)+'px');
+    frame.setAttribute('data-hero',h>.995?'off':'on');
+
+    /* header steps aside during the dive, returns on the ground */
+    var bo=c01(1-ramp(p,.12,.2)+ramp(p,.76,.84));
+    fst.setProperty('--bo',bo.toFixed(4));
+    frame.setAttribute('data-bar',bo<.01?'off':'on');
+
+    /* 02 vision: tag, masked lines, then sub; exits by pushing past camera */
+    var vin=ramp(p,.15,.31), vout=inOut(ramp(p,.47,.57));
+    live(vis,vin>0&&vout<1);
+    vis.style.opacity=(1-vout).toFixed(4);
+    vis.style.transform='translate3d(0,'+(-18*vout).toFixed(2)+'px,0) scale('+(1+.14*vout).toFixed(4)+')';
+    var tt=out3(ramp(vin,0,.4));
+    vTag.style.opacity=tt.toFixed(4);
+    vTag.style.transform='translate3d(0,'+(10*(1-tt)).toFixed(2)+'px,0)';
+    for(var i=0;i<vLines.length;i++){
+      var lt=out3(ramp(vin,.12+i*.13,.62+i*.13));
+      vLines[i].style.transform='translate3d(0,'+(110*(1-lt)).toFixed(3)+'%,0)';
+    }
+    var st2=out3(ramp(vin,.6,1));
+    vSub.style.opacity=st2.toFixed(4);
+    vSub.style.transform='translate3d(0,'+(12*(1-st2)).toFixed(2)+'px,0)';
+    veilV.style.opacity=Math.min(vin,1-vout).toFixed(4);
+
+    /* 03 ecosystem: copy settles, then the pins acquire one by one */
+    var ein=ramp(p,.8,.95);
+    live(eco,ein>0);
+    eco.style.opacity=ein>0?1:0;
+    var et=out3(ramp(ein,0,.55));
+    eTop.style.opacity=et.toFixed(4);
+    eTop.style.transform='translate3d(0,'+(22*(1-et)).toFixed(2)+'px,0)';
+    for(var j=0;j<spots.length;j++){
+      var s=out3(ramp(ein,.3+j*.12,.62+j*.12));
+      spots[j].style.opacity=s.toFixed(4);
+      spots[j].style.transform='scale('+(.7+.3*s).toFixed(4)+')';
+    }
+    veilE.style.opacity=ein.toFixed(4);
+
+    /* portrait crops keep only a sliver of the 16:9 film; as the dive lands,
+       pan the framing left so the fern stays in shot on the ground */
+    if(isFlow){
+      var ox=baseX-(baseX-26)*inOut(ramp(p,.68,.9));
+      film.style.objectPosition=ox.toFixed(2)+'% '+baseY+'%';
+    }else if(film.style.objectPosition){film.style.objectPosition='';}
+  }
+
+  /* ── film scrubbing ── */
+  var ready=false, dur=0, wantT=0;
+  function seek(p){
+    if(!ready)return;
+    wantT=map(FILM_MAP,p)*Math.max(0,dur-.05);
+    if(film.seeking)return;
+    if(Math.abs(film.currentTime-wantT)>.0005)film.currentTime=wantT;
+  }
+
+  var target=0, cur=0, raf=0, prev=0;
+  function readScroll(){
+    var max=document.documentElement.scrollHeight-innerHeight;
+    target=max>0?c01((window.pageYOffset||document.documentElement.scrollTop)/max):0;
+  }
+  function loop(now){
+    raf=0;
+    var dt=prev?Math.min(64,now-prev):16.667; prev=now;
+    /* ~0.11 per 60Hz frame: heavy enough to glide, light enough to feel attached */
+    var k=reduce?1:1-Math.pow(1-.11,dt/16.667);
+    cur+=(target-cur)*k;
+    if(Math.abs(target-cur)<.00004)cur=target;
+    render(cur);
+    seek(cur);
+    if(cur!==target||(ready&&film.seeking))raf=requestAnimationFrame(loop);
+    else prev=0;
+  }
+  function kick(){readScroll();if(!raf)raf=requestAnimationFrame(loop);}
+  addEventListener('scroll',kick,{passive:true});
+  addEventListener('resize',function(){fit();last=-1;kick();},{passive:true});
+  film.addEventListener('seeked',function(){if(Math.abs(film.currentTime-wantT)>.0005)kick();});
+
+  function onReady(){
+    if(ready)return;
+    ready=true; dur=film.duration||0;
+    film.pause(); fit();
+    film.currentTime=map(FILM_MAP,cur)*Math.max(0,dur-.05);
+    film.classList.add('on');
+  }
+  film.addEventListener('loadeddata',function(){
+    /* iOS only paints a never-played video after a play(); prime it muted */
+    var pr=film.play();
+    if(pr&&pr.then)pr.then(onReady,onReady);else onReady();
+  });
+  function useSrc(u){film.src=u;film.load();}
+  if(window.fetch&&window.URL&&URL.createObjectURL){
+    fetch(FILM_SRC,{mode:'cors'}).then(function(r){if(!r.ok)throw 0;return r.blob();})
+      .then(function(b){useSrc(URL.createObjectURL(b));},function(){useSrc(FILM_ORIGINAL);});
+  }else useSrc(FILM_SRC);
+  film.addEventListener('error',function(){if(film.src.indexOf(FILM_ORIGINAL)<0)useSrc(FILM_ORIGINAL);});
+
+  readScroll(); cur=target; render(cur);
+})();
+</script>
+</body>
+</html>
